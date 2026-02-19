@@ -1,0 +1,1896 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cadou</title>
+
+  <style>
+    :root{
+      --txt: rgba(255,255,255,.95);
+      --muted: rgba(255,255,255,.80);
+
+      --hotpink:#ff1fb8;
+      --violet:#7a3cff;
+      --aqua:#12f7ff;
+      --gold:#ffd36a;
+
+      --shadow: 0 30px 90px rgba(0,0,0,.62);
+      --r: 28px;
+      --r2: 18px;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      color:var(--txt);
+      overflow:hidden;
+      background:#000;
+    }
+
+    /* ===== LAYERS ===== */
+    .bgVideo{
+      position:fixed; inset:0;
+      width:100%; height:100%;
+      object-fit:cover; object-position:center;
+      z-index:-3;
+      filter: saturate(1.15) contrast(1.08);
+    }
+    .bgVideoOverlay{
+      position:fixed; inset:0;
+      z-index:-2;
+      background:
+        radial-gradient(1200px 800px at 16% 10%, rgba(255,31,184,.32), transparent 60%),
+        radial-gradient(1100px 800px at 86% 16%, rgba(18,247,255,.22), transparent 60%),
+        radial-gradient(1200px 900px at 50% 92%, rgba(122,60,255,.22), transparent 62%),
+        linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.62));
+    }
+    .glow{
+      position:fixed; inset:-25%;
+      background:
+        radial-gradient(600px 420px at 18% 30%, rgba(255,31,184,.26), transparent 62%),
+        radial-gradient(560px 420px at 78% 26%, rgba(18,247,255,.18), transparent 62%),
+        radial-gradient(700px 520px at 55% 78%, rgba(122,60,255,.18), transparent 66%),
+        radial-gradient(480px 380px at 45% 40%, rgba(255,211,106,.12), transparent 64%);
+      filter: blur(18px);
+      opacity:.95;
+      animation: haze 12s ease-in-out infinite;
+      pointer-events:none;
+      z-index:-1;
+    }
+    @keyframes haze{
+      0%{ transform: translate(0,0) scale(1); }
+      50%{ transform: translate(-22px, 14px) scale(1.03); }
+      100%{ transform: translate(0,0) scale(1); }
+    }
+    .grain{
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.10;
+      pointer-events:none;
+      z-index:-1;
+    }
+    canvas#confetti{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:0;
+    }
+    canvas#sparkles{
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:1;
+    }
+
+    .wrap{
+      position:relative;
+      z-index:10;
+      min-height:100%;
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+
+    .card{
+      width:min(980px, 94vw);
+      background: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.06));
+      border:1px solid rgba(255,255,255,.20);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      padding: 22px;
+      position:relative;
+      overflow:hidden;
+      transform: translateZ(0);
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      left:-35%;
+      top:-55%;
+      width:175%;
+      height:70%;
+      background:
+        linear-gradient(90deg,
+          rgba(255,31,184,.35),
+          rgba(18,247,255,.22),
+          rgba(122,60,255,.28),
+          rgba(255,211,106,.18)
+        );
+      transform: rotate(-8deg);
+      filter: blur(2px);
+      opacity:.95;
+      pointer-events:none;
+    }
+
+    .badge{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 44px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius:999px;
+      background: rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.82);
+      font-size:13px;
+      letter-spacing:.2px;
+      font-weight: 900;
+    }
+
+    h1{
+      position:relative;
+      margin:14px 0 8px;
+      font-size: clamp(28px, 4.6vw, 48px);
+      line-height:1.05;
+      letter-spacing: .2px;
+      text-shadow: 0 18px 45px rgba(0,0,0,.48);
+    }
+    p{
+      position:relative;
+      margin:10px 0;
+      color: var(--muted);
+      line-height:1.55;
+      font-size:16px;
+    }
+
+    .row{
+      margin-top: 14px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+
+    button{
+      border:0; cursor:pointer; user-select:none;
+      border-radius: var(--r2);
+      padding: 12px 14px;
+      font-weight: 980;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.95);
+      background:
+        radial-gradient(120px 90px at 20% 0%, rgba(255,255,255,.18), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.20);
+      box-shadow: 0 20px 40px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.24);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+    }
+    button:hover{ transform: translateY(-1px); filter: brightness(1.08); }
+    button:active{ transform: translateY(2px); filter: brightness(.98); }
+    button:disabled{ opacity:.55; cursor:not-allowed; transform:none !important; }
+
+    .primary{
+      color:#071018;
+      background:
+        radial-gradient(220px 120px at 18% 0%, rgba(255,255,255,.22), transparent 60%),
+        linear-gradient(135deg, rgba(255,31,184,.98), rgba(18,247,255,.78));
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:
+        0 26px 55px rgba(0,0,0,.35),
+        0 0 40px rgba(255,31,184,.18),
+        0 0 40px rgba(18,247,255,.12),
+        inset 0 1px 0 rgba(255,255,255,.22);
+    }
+    .ghost{
+      background: rgba(0,0,0,.18);
+      border:1px dashed rgba(255,255,255,.22);
+      color: rgba(255,255,255,.86);
+      box-shadow:none;
+    }
+
+    .status{
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      display:none;
+      font-weight: 850;
+      letter-spacing: .1px;
+    }
+    .status.show{ display:block; }
+    .status.good{
+      border-color: rgba(124,255,178,.35);
+      background: rgba(124,255,178,.10);
+    }
+    .status.bad{
+      border-color: rgba(255,122,122,.35);
+      background: rgba(255,122,122,.10);
+    }
+
+    /* transitions */
+    .screen{ display:none; }
+    .screen.active{ display:block; animation: pop .36s ease; }
+    @keyframes pop{
+      from{ transform: translateY(14px) scale(.995); opacity:0; }
+      to{ transform: translateY(0) scale(1); opacity:1; }
+    }
+
+    /* ===== Screen 1 ===== */
+    .grid{
+      position:relative;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:14px;
+      margin-top: 16px;
+      align-items: stretch;
+    }
+    @media (max-width:820px){ .grid{ grid-template-columns: 1fr; } }
+
+    .panel{
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius: var(--r);
+      padding: 16px;
+    }
+
+    .dateBtn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding: 16px 16px;
+      border-radius: 24px;
+      border:1px solid rgba(255,255,255,.24);
+      background:
+        radial-gradient(900px 240px at 12% 20%, rgba(255,31,184,.38), transparent 52%),
+        radial-gradient(900px 240px at 88% 20%, rgba(18,247,255,.30), transparent 54%),
+        linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.07));
+      box-shadow:
+        0 26px 55px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.26);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, filter .12s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .dateBtn::after{
+      content:"";
+      position:absolute;
+      top:-40%;
+      left:-60%;
+      width:60%;
+      height:180%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+      transform: rotate(18deg);
+      animation: sheen 2.8s ease-in-out infinite;
+      opacity:.75;
+    }
+    @keyframes sheen{
+      0%{ left:-70%; }
+      60%{ left:120%; }
+      100%{ left:120%; }
+    }
+    .dateBtn:hover{ transform: translateY(-1px); filter: brightness(1.06); }
+    .dateBtn:active{ transform: translateY(2px); filter: brightness(.98); }
+    .dateLeft{ display:flex; flex-direction:column; gap:6px; min-width:0; position:relative; z-index:2; }
+    .dateLabel{ font-size:16px; color: rgba(255,255,255,.86); letter-spacing:.2px; font-weight: 900; }
+    .dateValue{
+      font-size: 18px; font-weight: 980; letter-spacing:.2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pill{
+      position:relative; z-index:2;
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:10px 12px;
+      border-radius: 999px;
+      font-weight: 980;
+      border:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(135deg, rgba(255,31,184,.55), rgba(18,247,255,.35));
+      box-shadow: 0 18px 30px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.20);
+    }
+
+    /* ===== Calendar modal ===== */
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      place-items:end center;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(12px);
+      padding: 14px;
+      z-index: 50;
+    }
+    .modal.show{ display:grid; }
+    .sheet{
+      width:min(560px, 96vw);
+      border-radius: 28px;
+      border:1px solid rgba(255,255,255,.20);
+      background:
+        radial-gradient(900px 260px at 18% 0%, rgba(255,31,184,.26), transparent 58%),
+        radial-gradient(900px 260px at 82% 0%, rgba(18,247,255,.20), transparent 60%),
+        radial-gradient(900px 260px at 50% 0%, rgba(122,60,255,.18), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+      box-shadow: 0 34px 110px rgba(0,0,0,.70);
+      overflow:hidden;
+      animation: sheetIn .24s ease;
+      position:relative;
+    }
+    @keyframes sheetIn{ from{ transform: translateY(18px); opacity:0; } to{ transform: translateY(0); opacity:1; } }
+    .sheetTop{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+    }
+    .sheetTitle{ font-weight: 980; letter-spacing:.2px; }
+    .iconBtn{
+      border-radius: 16px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:none;
+      font-weight: 900;
+      color: rgba(255,255,255,.92);
+    }
+    .cal{ padding: 14px; }
+    .calHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 10px; }
+    .monthName{ font-weight: 980; letter-spacing:.2px; font-size: 60px; }
+    .nav{ display:flex; gap:10px; }
+    .dow{
+      display:grid; grid-template-columns: repeat(7, 1fr);
+      gap:8px; margin: 10px 0 10px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px; text-align:center;
+      letter-spacing:.2px; font-weight: 800;
+    }
+    .days{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .day{
+      height: 46px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      display:grid; place-items:center;
+      cursor:pointer; user-select:none;
+      transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease;
+      font-weight: 950; letter-spacing:.2px;
+    }
+    .day:hover{ transform: translateY(-1px); filter: brightness(1.08); }
+    .day:active{ transform: translateY(2px); filter: brightness(.98); }
+    .day.muted{ opacity:.35; cursor:default; }
+    .day.muted:hover{ transform:none; filter:none; }
+    .day.selected{
+      border-color: rgba(255,255,255,.24);
+      color:#071018;
+      background:
+        radial-gradient(140px 90px at 30% 10%, rgba(255,255,255,.22), transparent 60%),
+        linear-gradient(135deg, rgba(255,31,184,.96), rgba(18,247,255,.72));
+      box-shadow: 0 18px 34px rgba(0,0,0,.24);
+    }
+    .day.today{
+      border-color: rgba(255,211,106,.60);
+      background: rgba(255,211,106,.14);
+    }
+    .sheetBottom{
+      padding: 14px;
+      border-top:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      display:flex; gap:10px;
+      justify-content:space-between;
+      align-items:center; flex-wrap:wrap;
+    }
+    .picked{ font-size: 14px; color: rgba(255,255,255,.86); font-weight: 800; }
+
+    /* ===== Screen 2: QUESTIONS ===== */
+    .qCount{
+      font-weight: 950; letter-spacing:.2px;
+      color: rgba(255,255,255,.86);
+      padding: 10px 12px; border-radius: 999px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+    .progress{
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+      margin-top: 10px;
+    }
+    .bar{
+      height:100%; width:0%;
+      background: linear-gradient(90deg, rgba(255,31,184,.92), rgba(18,247,255,.70));
+      border-radius: 999px;
+      transition: width .30s ease;
+    }
+    .arena{
+      position:relative;
+      margin-top: 14px;
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      padding: 18px;
+      min-height: 290px;
+      overflow:hidden;
+    }
+    .aurora{
+      position:absolute; inset:-30%;
+      background:
+        radial-gradient(650px 220px at 20% 50%, rgba(255,31,184,.16), transparent 62%),
+        radial-gradient(650px 220px at 70% 35%, rgba(18,247,255,.12), transparent 62%),
+        radial-gradient(650px 220px at 45% 70%, rgba(122,60,255,.12), transparent 62%);
+      filter: blur(10px);
+      opacity:.9;
+      pointer-events:none;
+      animation: aur 10s ease-in-out infinite;
+      z-index:1;
+    }
+    @keyframes aur{
+      0%{ transform: translate(0,0) rotate(0deg); }
+      50%{ transform: translate(-10px, 8px) rotate(2deg); }
+      100%{ transform: translate(0,0) rotate(0deg); }
+    }
+    .qText{
+      font-size: 20px; font-weight: 950; letter-spacing:.2px; line-height:1.35;
+      margin: 0 0 12px; position:relative; z-index:2;
+      text-shadow: 0 16px 34px rgba(0,0,0,.45);
+    }
+    .qSub{
+      margin: 0 0 14px;
+      color: rgba(255,255,255,.78);
+      position:relative; z-index:2;
+    }
+    .answers{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; position:relative; z-index:2; }
+
+    .yes{
+      color:#071018;
+      background:
+        radial-gradient(220px 120px at 18% 0%, rgba(255,255,255,.22), transparent 60%),
+        linear-gradient(135deg, rgba(124,255,178,.95), rgba(18,247,255,.70));
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:
+        0 26px 55px rgba(0,0,0,.30),
+        0 0 40px rgba(18,247,255,.10),
+        inset 0 1px 0 rgba(255,255,255,.22);
+      animation: beat 2.2s ease-in-out infinite;
+      transform-origin:center;
+    }
+    @keyframes beat{
+      0%, 100%{ transform: scale(1); }
+      7%{ transform: scale(1.03); }
+      14%{ transform: scale(1); }
+      23%{ transform: scale(1.035); }
+      35%{ transform: scale(1); }
+    }
+
+    .no{
+      position:absolute; z-index:3;
+      left: 70%; top: 62%;
+      will-change: left, top;
+      transition: left .10s ease, top .10s ease;
+    }
+
+    .wink{
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.82);
+      display:none;
+      font-weight: 850;
+    }
+    .wink.show{ display:block; }
+
+    /* ===== Screen 3: LETTER ===== */
+    .letterShell{
+      margin-top: 14px;
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+      position:relative;
+    }
+    .letterTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      padding: 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+    }
+    .letterTitle{ font-weight: 980; letter-spacing:.2px; }
+
+    .paper{
+      padding: 18px;
+      background:
+        radial-gradient(900px 280px at 12% 0%, rgba(255,255,255,.18), transparent 60%),
+        radial-gradient(900px 280px at 88% 0%, rgba(255,255,255,.10), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    }
+    .paperInner{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(0,0,0,.10), rgba(0,0,0,.22));
+      box-shadow: 0 24px 60px rgba(0,0,0,.38);
+      overflow:hidden;
+    }
+    .paperContent{
+      padding: 18px;
+      min-height: 420px;
+      max-height: 55vh;
+      overflow:auto;
+      line-height: 1.75;
+      color: rgba(255,255,255,.90);
+      font-size: 16px;
+      white-space: pre-wrap;
+    }
+    .paperContent::-webkit-scrollbar{ width: 10px; }
+    .paperContent::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.14);
+      border-radius: 999px;
+    }
+    .caret{
+      display:inline-block;
+      width: 10px;
+      height: 18px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.55);
+      margin-left: 4px;
+      animation: blink 1s steps(1) infinite;
+      vertical-align: baseline;
+    }
+    @keyframes blink{ 50%{ opacity:.08; } }
+
+    .sig{
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.86);
+      font-weight: 900;
+    }
+    .sigName{
+      display:inline-block;
+      font-family: "Brush Script MT", "Segoe Script", "Snell Roundhand", "Apple Chancery", cursive;
+      font-size: 34px;
+      letter-spacing: .2px;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 18px 40px rgba(0,0,0,.45);
+      transform: rotate(-2deg);
+    }
+
+    /* ===== Screen 4: FLOWERS ===== */
+    .flowersScroll{
+      margin-top: 12px;
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.14);
+      overflow:auto;
+      max-height: 64vh;
+      padding: 14px;
+    }
+    .flowersScroll::-webkit-scrollbar{ width: 10px; }
+    .flowersScroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
+
+    .slideshow{
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.16);
+      overflow:hidden;
+      background: rgba(0,0,0,.18);
+      position:relative;
+      min-height: 300px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.35);
+    }
+    .slide{
+      position:absolute; inset:0;
+      opacity:0;
+      transition: opacity 1200ms ease;
+    }
+    .slide.active{ opacity:1; }
+    .slide img{
+      width:100%; height:100%;
+      object-fit:cover;
+      transform: scale(1.08);
+      animation: kenburns 7.2s ease-in-out infinite;
+      filter: saturate(1.08) contrast(1.05);
+    }
+    @keyframes kenburns{
+      0%{ transform: scale(1.08) translate(0,0); }
+      50%{ transform: scale(1.14) translate(-1.5%, -1.0%); }
+      100%{ transform: scale(1.08) translate(0,0); }
+    }
+    .slideOverlay{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(900px 360px at 15% 15%, rgba(255,31,184,.20), transparent 60%),
+        radial-gradient(900px 360px at 85% 15%, rgba(18,247,255,.14), transparent 60%),
+        linear-gradient(to bottom, rgba(0,0,0,.06), rgba(0,0,0,.34));
+      pointer-events:none;
+    }
+
+    .dedication{
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(800px 220px at 20% 0%, rgba(255,31,184,.16), transparent 60%),
+        radial-gradient(800px 220px at 80% 0%, rgba(18,247,255,.10), transparent 60%),
+        rgba(0,0,0,.14);
+      font-weight: 950;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.90);
+    }
+
+    .gallery{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+    }
+    .ph{
+      grid-column: span 4;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.16);
+      overflow:hidden;
+      background: rgba(0,0,0,.18);
+      position:relative;
+      min-height: 150px;
+      cursor:pointer;
+    }
+    .ph.wide{ grid-column: span 6; min-height: 180px; }
+    .ph.big{ grid-column: span 12; min-height: 260px; }
+    .ph img{
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+      filter: saturate(1.05) contrast(1.05);
+      transform: scale(1.02);
+      transition: transform .35s ease, filter .35s ease;
+    }
+    .ph:hover img{ transform: scale(1.06); filter: saturate(1.12) contrast(1.08); }
+
+    @media (max-width:820px){
+      .ph{ grid-column: span 12; min-height: 200px; }
+      .ph.wide, .ph.big{ grid-column: span 12; }
+    }
+
+    .karaokeBox{
+      margin-top: 12px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius: var(--r);
+      padding: 16px;
+    }
+    .karaokeHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom: 12px;
+    }
+    .karaokeLine{
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing:.2px;
+      line-height: 1.4;
+      margin: 12px 0;
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+    .word{
+      display:inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.14);
+      transform: translateY(0);
+      transition: transform .12s ease, filter .12s ease;
+      will-change: transform;
+    }
+    .word.active{
+      background: linear-gradient(135deg, rgba(255,31,184,.70), rgba(18,247,255,.42));
+      color: rgba(255,255,255,.96);
+      filter: brightness(1.12);
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px rgba(0,0,0,.30);
+    }
+    .smallNote{
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .controls{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .range{
+      accent-color: var(--hotpink);
+      width: 160px;
+    }
+
+    /* ===== FINAL SCREEN ===== */
+    .finalBox{
+      margin-top: 14px;
+      border-radius: var(--r);
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      overflow:hidden;
+    }
+    .finalTop{
+      padding: 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.12);
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .finalScroll{
+      padding: 16px;
+      max-height: 60vh;
+      overflow:auto;
+    }
+    .finalScroll::-webkit-scrollbar{ width:10px; }
+    .finalScroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius:999px; }
+
+    .finalMsg{
+      font-size: 20px;
+      font-weight: 980;
+      letter-spacing:.2px;
+      line-height: 1.5;
+      text-shadow: 0 16px 34px rgba(0,0,0,.45);
+      margin: 8px 0 14px;
+    }
+    .finalSub{
+      color: rgba(255,255,255,.78);
+      line-height: 1.65;
+    }
+    .softCard{
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 20px;
+      border:1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(800px 220px at 20% 0%, rgba(255,31,184,.14), transparent 60%),
+        radial-gradient(800px 220px at 80% 0%, rgba(18,247,255,.10), transparent 60%),
+        rgba(0,0,0,.14);
+    }
+  </style>
+</head>
+
+<body>
+  <video class="bgVideo" autoplay muted loop playsinline preload="metadata">
+    <source src="assets/bg.mp4" type="video/mp4" />
+  </video>
+  <div class="bgVideoOverlay"></div>
+
+  <div class="glow"></div>
+  <div class="grain"></div>
+  <canvas id="confetti"></canvas>
+  <canvas id="sparkles"></canvas>
+
+  <main class="wrap">
+
+    <!-- SCREEN 1 -->
+    <section class="card screen active" data-screen="date">
+      <div class="badge">👋🏻💗</div>
+      <h1>Oare în ce dată suntem azi, sti?</h1>
+      <p>Alege data corect si apasa mereu (Mai departe) 👇 pentru a continua.🙏</p>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="dateBtn" id="openCalendar">
+            <div class="dateLeft">
+              <div class="dateLabel">Calendar</div>
+              <div class="dateValue" id="dateValue">Alege data…</div>
+            </div>
+            <div class="pill">Deschide</div>
+          </div>
+
+          <div class="status" id="status"></div>
+
+          <div class="row">
+            <div></div>
+            <div class="btns">
+              <button class="primary" id="nextBtn" disabled>Mai departe →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="font-weight:980; letter-spacing:.2px; font-size:22px;">👋🏻😘🤍</div>
+          <p style="margin-top:2px;">
+            Buna Mira, am pregatit un mic cadou pentru tine, urmeaza pasii pentru a continua 
+            si vreau ca prin el sa reusesc sa pun un mic zambet pe chipul tau in acesta zi minunata.
+            Pentru o persoana speciala.🌹🥹
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2 -->
+    <section class="card screen" data-screen="questions">
+      <div class="badge">🥹😃</div>
+
+      <h1 id="qTitle">Intrebări</h1>
+      <p id="qLead"></p>
+
+      <div class="row" style="justify-content:space-between;">
+        <div class="qCount" id="qCount">1 / 5</div>
+        <div class="btns">
+          <button class="ghost" id="qBack">← Înapoi</button>
+        </div>
+      </div>
+
+      <div class="progress" aria-hidden="true"><div class="bar" id="bar"></div></div>
+
+      <div class="arena" id="arena">
+        <div class="aurora"></div>
+
+        <div class="qText" id="qText"></div>
+        <div class="qSub" id="qSub"></div>
+
+        <div class="answers">
+          <button class="yes" id="yesBtn">Yeess</button>
+        </div>
+
+        <button class="no" id="noBtn">NO</button>
+      </div>
+
+      <div class="wink" id="wink"></div>
+      <div class="status" id="qStatus"></div>
+
+      <div class="row">
+        <div></div>
+        <div class="btns">
+          <button class="primary" id="qNext" disabled>Mai departe →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: LETTER -->
+    <section class="card screen" data-screen="letter">
+      <div class="badge">✉</div>
+      <h1>O mica urare pentru o persoana minunata!</h1>
+      <p>Se scrie singură… dar poți apăsa “Instant” dacă vrei să o vezi imediat.</p>
+
+      <div class="letterShell">
+        <div class="letterTop">
+          <div class="letterTitle" id="letterTitle">Către Mirabela</div>
+          <div class="btns">
+            <button class="ghost" id="letterBack">← Înapoi</button>
+            <button class="ghost" id="typingReplay">Scrie din nou</button>
+            <button class="ghost" id="typingInstant">Instant</button>
+            <button class="primary" id="toFlowers">Mai departe →</button>
+          </div>
+        </div>
+
+        <div class="paper">
+          <div class="paperInner">
+            <div class="paperContent" id="paperContent"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: FLOWERS -->
+    <section class="card screen" data-screen="flowers">
+      <div class="badge">🤗🌸</div>
+      <h1>Ceva frumos pentru ceva si mai frumos!</h1>
+      <p>Apasa PLAY. Scroll în jos… sunt multe. 🤍</p>
+
+      <div class="row">
+        <button class="ghost" id="flowersBack">← Înapoi</button>
+
+        <div class="btns controls">
+          <button class="primary" id="playBtn">Play</button>
+          <button class="ghost" id="pauseBtn" disabled>Pause</button>
+          <button class="ghost" id="stopBtn" disabled>Stop</button>
+          <label class="smallNote" style="margin:0;">Volum</label>
+          <input class="range" id="vol" type="range" min="0" max="1" step="0.01" value="0.85">
+        </div>
+      </div>
+
+      <div class="flowersScroll" id="flowersScroll">
+        <div class="slideshow" id="slideshow">
+          <div class="slide active"><img id="slideImg0" src="" alt="flori"></div>
+          <div class="slide"><img id="slideImg1" src="" alt="flori"></div>
+          <div class="slide"><img id="slideImg2" src="" alt="flori"></div>
+          <div class="slide"><img id="slideImg3" src="" alt="flori"></div>
+          <div class="slideOverlay"></div>
+        </div>
+
+        <div class="dedication" id="dedication">Sunt cateva flori frumoase pentru tine! Nu stiu exact care iti plac, dar sper ca am nimerit macar una😅. Si mada,
+          mi-ar placea sa le aflu pe toate...(un mic screenshot m-ar ajuta😅) </div>
+
+        <div class="gallery" id="gallery"></div>
+
+        <div class="karaokeBox">
+          <div class="karaokeHead">
+            <div>
+              <div style="font-weight:950; letter-spacing:.2px; font-size:18px;">Happy Birthday</div>
+              <div class="smallNote">Sunetul pornește doar după click pe butonul PLAY.</div>
+            </div>
+          </div>
+
+          <div class="karaokeLine" id="line1"></div>
+          <div class="karaokeLine" id="line2"></div>
+          <div class="karaokeLine" id="line3"></div>
+          <div class="karaokeLine" id="line4"></div>
+
+          <div class="status" id="songStatus"></div>
+
+          <audio id="song" preload="auto">
+            <source src="assets/happy.mp3" type="audio/mpeg">
+          </audio>
+
+          <div class="row" style="margin-top:12px;">
+            <div></div>
+            <div class="btns">
+              <button class="primary" id="toFinal">Mai departe →</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 5: FINAL -->
+    <section class="card screen" data-screen="final">
+      <div class="badge">🤍</div>
+      <h1>Încă un lucru…</h1>
+      <p>Ultimul lucru. Cu un cântecel și un mesaj mic de incheiere.</p>
+
+      <div class="finalBox">
+        <div class="finalTop">
+          <div class="btns controls">
+            <button class="primary" id="fPlay">Play</button>
+            <button class="ghost" id="fPause" disabled>Pause</button>
+            <button class="ghost" id="fStop" disabled>Stop</button>
+            <label class="smallNote" style="margin:0;">Volum</label>
+            <input class="range" id="fVol" type="range" min="0" max="1" step="0.01" value="0.85">
+          </div>
+
+          <div class="btns">
+            <button class="ghost" id="finalBack">← Înapoi</button>
+            <button class="primary" id="replayAll">Reia surpriza ↺</button>
+          </div>
+        </div>
+
+        <div class="finalScroll">
+          <div class="finalMsg" id="finalMsg">
+            Dacă ai ajuns până aici… înseamnă că putin din timpul tau mi l-ai dat mie.
+            Iti multumesc Mira foarte frumos pentru cele 8-10min pe care ti le-ai consumat parcurgand asta 
+            si sper ca macar o parte din surpriza asta a reusit sa iti aduca un zambet minunat
+            sau o emotie frumoasa in aceasta zi speciala.
+          </div>
+          <div class="finalSub" id="finalSub">
+            Dacă ai ajuns până aici… înseamnă că putin din timpul tau mi l-ai dat mie.
+            Iti multumesc Mira foarte frumos pentru cele 8-10min pe care ti le-ai consumat parcurgand asta 
+            si sper ca macar o parte din surpriza asta a reusit sa iti aduca un zambet minunat
+            sau o emotie frumoasa in aceasta zi speciala.
+          </div>
+
+          <div class="softCard">
+            <div style="font-weight:950; letter-spacing:.2px;">Un gând mic:</div>
+            <div style="color:rgba(255,255,255,.78); line-height:1.6; margin-top:6px;">
+              Uneori, cele mai frumoase lucruri nu cer nimic si nu asteapta nimic. Doar există… și fac ziua mai bună.
+            </div>
+          </div>
+
+          <audio id="finalSong" preload="auto">
+            <!-- tu pui aici piesa instrumentală -->
+            <source src="assets/la_multi_ani_instrumental.mp3" type="audio/mpeg">
+          </audio>
+
+          <div class="status" id="finalStatus" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CALENDAR MODAL -->
+  <div class="modal" id="modal">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Calendar">
+      <div class="sheetTop">
+        <div class="sheetTitle">Alege data</div>
+        <button class="iconBtn" id="closeModal">Închide</button>
+      </div>
+
+      <div class="cal">
+        <div class="calHeader">
+          <div class="monthName" id="monthName">Aprilie</div>
+          <div class="nav">
+            <button class="iconBtn" id="prevMonth">‹</button>
+            <button class="iconBtn" id="nextMonth">›</button>
+          </div>
+        </div>
+
+        <div class="dow">
+          <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+        </div>
+
+        <div class="days" id="days"></div>
+      </div>
+
+      <div class="sheetBottom">
+        <div class="picked" id="pickedText">Selectează o zi</div>
+        <div class="btns">
+          <button class="ghost" id="clearPick">Reset</button>
+          <button class="primary" id="confirmPick" disabled>Confirmă</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /************ CONFIG ************/
+    const TARGET_MM_DD = "04-17";
+
+    // ✅ 5 întrebări (ai cerut +2). Tu le schimbi după.
+    const QUESTIONS = [
+      { title: "Întrebarea 1", lead: "", text: "Îți place putin aceasta surpriza, am făcut-o special pentru tine?", sub: "Răspunsul tău rămâne aici. Dupa fiecare răspuns YEESS sua (NO)😅😋🙈, apasă pe butonul de continuare." },
+      { title: "Întrebarea 2", lead: "", text: "Am reusit putin sa te fac pana aici sa zambesti?", sub: "Dacă zici YES… promit că nu mă laud 😂(prea mult)." },
+      { title: "Întrebarea 3", lead: "", text: "Vrei să mai primești încă o surpriză mică?", sub: "Nu e contract. E doar… o idee frumoasă, ceva frumos pentru o persoana minunata." },
+      { title: "Întrebarea 4", lead: "", text: "Pot să-ți spun ceva, simplu și curat?", sub: "Fără exagerări. Doar adevăr, pur adevar🥹." },
+      { title: "Întrebarea 5", lead: "", text: "Pot să-ți spun, din inimă: La mulți ani?", sub: "Fără presiune. Doar cu respect." }
+    ];
+    const YES_MESSAGES = [
+      "Wooww...Mulțumesc. Inseamnă mult pentru mine.",
+      "Ok… am prins. Zâmbet confirmat. 😄",
+      "😂da, parca stiam.",
+      "Bine… atunci îl spun. Esti minunata. Un suflet frumos si bun, cu o energie speciala, care merita tot ce e mai bun in aceasta lume. 🥹",
+      "Atunci… LA MULTI ANI BINECUVANTATI MIRA 🥹, din inimă."
+    ];
+    const WINK_AFTER_YES_ON_Q2 = "Notă oficială: dacă ai zâmbit, conform REGULILOR MELE… îți datorez un alt compliment. -> Esti frumoasa! 😅";
+
+    const LETTER_TEXT =
+`Mirabela,
+
+La mulți ani.
+
+Nu știu dacă există cuvinte suficient de simple și curate care să spună exact ce simt, dar vreau sa spun ceva si vreau sa fie despre tine.
+
+Îți doresc o inimă liniștită.
+Îți doresc zile senine.
+Îți doresc oameni care să te prețuiască pentru felul tău blând de a fi.
+Îți doresc să nu-ți pierzi niciodată delicatețea.
+Îți doresc să rămâi exact așa cum ești — autentică, caldă și discret frumoasă.
+
+Sunt ani de când te știu și poate fără să îți dai seama, ai însemnat mai mult pentru mine decât am spus vreodată.
+Au fost momente simple — plimbari, priviri, simple saluturi — care pentru tine poate au fost obișnuite, dar pentru mine au rămas undeva adânc.
+
+Nu îți scriu ca să te simti ciudat cand citesti.
+Si nu scriu ca să cer ceva.
+Îți scriu doar pentru că astăzi meriți să știi că ești apreciată, respectată și privită cu admirație sinceră.
+
+Te-am încredințat de multe ori în rugăciune, și o voi face în continuare.
+Nu ca să schimb ceva.
+Ci ca să fii mereu bine.
+
+Doresc să ai parte de liniște în suflet.
+Să te trezești dimineața cu pace.
+Să adormi seara cu recunoștință.
+
+Să nu-ți pierzi niciodată blândețea.
+Și să rămâi exact așa cum ești — autentică și frumoasă în felul tău.
+
+La mulți ani, Mirabela.
+Cu toată sinceritatea,`;
+
+    const SIGNATURE_NAME = "Filip";
+    const TYPING_MS = 18;
+
+    const DEDICATION_TEXT = "Sunt cateva flori frumoase pentru tine! Nu stiu exact care iti plac, dar sper ca am nimerit macar una😅. Si mada, mi-ar placea sa aflu exact si care...(un mic screenshot m-ar ajuta😅) 🤍";
+
+    // 25+ imagini
+    const FLOWER_IMAGES = [
+      "assets/flori1.jpg","assets/flori2.jpg","assets/flori3.jpg","assets/flori4.jpg",
+      "assets/flori5.jpg","assets/flori6.jpg","assets/flori7.jpg","assets/flori8.jpg",
+      "assets/flori9.jpg","assets/flori10.jpg","assets/flori11.jpg","assets/flori12.jpg",
+      "assets/flori13.jpg","assets/flori14.jpg","assets/flori15.jpg","assets/flori16.jpg",
+      "assets/flori17.jpg","assets/flori18.jpg","assets/flori19.jpg","assets/flori20.jpg",
+      "assets/flori21.jpg","assets/flori22.jpg","assets/flori23.jpg","assets/flori24.jpg",
+      "assets/flori25.jpg"
+    ];
+
+    // Final message (poți edita)
+    const FINAL_MESSAGE =
+      "Dacă ai ajuns până aici… înseamnă că mi-ai dat voie să rămân puțin în ziua ta. Iti multumesc mult mult pentru asta, și sper că măcar o parte din surpriza asta a reușit să îți aducă un zâmbet minunat sau o emoție frumoasă în această zi specială. La mulți ani, Mirabela! 🥳🎉";
+    const FINAL_SUB =
+      "Nu-ți cer nimic. Doar îți doresc să fii bine, Tu sti ce e cel mai bine pentru tine.";
+
+    /************ screens ************/
+    const screens = [...document.querySelectorAll(".screen")];
+    const show = (name)=> screens.forEach(s => s.classList.toggle("active", s.dataset.screen === name));
+
+    /************ refs ************/
+    // date
+    const openCalendar = document.getElementById("openCalendar");
+    const modal = document.getElementById("modal");
+    const closeModal = document.getElementById("closeModal");
+    const daysEl = document.getElementById("days");
+    const monthNameEl = document.getElementById("monthName");
+    const prevMonthBtn = document.getElementById("prevMonth");
+    const nextMonthBtn = document.getElementById("nextMonth");
+    const clearPickBtn = document.getElementById("clearPick");
+    const confirmPickBtn = document.getElementById("confirmPick");
+    const pickedText = document.getElementById("pickedText");
+    const dateValue = document.getElementById("dateValue");
+    const status = document.getElementById("status");
+    const nextBtn = document.getElementById("nextBtn");
+
+    // questions
+    const qTitle = document.getElementById("qTitle");
+    const qLead  = document.getElementById("qLead");
+    const qText  = document.getElementById("qText");
+    const qSub   = document.getElementById("qSub");
+    const qCount = document.getElementById("qCount");
+    const qStatus= document.getElementById("qStatus");
+    const qNext  = document.getElementById("qNext");
+    const qBack  = document.getElementById("qBack");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const arena  = document.getElementById("arena");
+    const bar    = document.getElementById("bar");
+    const wink   = document.getElementById("wink");
+
+    // letter
+    const paperContent = document.getElementById("paperContent");
+    const letterBack = document.getElementById("letterBack");
+    const toFlowers = document.getElementById("toFlowers");
+    const typingReplay = document.getElementById("typingReplay");
+    const typingInstant = document.getElementById("typingInstant");
+
+    // flowers
+    const flowersBack = document.getElementById("flowersBack");
+    const dedication = document.getElementById("dedication");
+    const gallery = document.getElementById("gallery");
+    const toFinal = document.getElementById("toFinal");
+
+    // slideshow
+    const slideshow = document.getElementById("slideshow");
+    const slides = [...slideshow.querySelectorAll(".slide")];
+    const slideImgs = [
+      document.getElementById("slideImg0"),
+      document.getElementById("slideImg1"),
+      document.getElementById("slideImg2"),
+      document.getElementById("slideImg3"),
+    ];
+
+    // song controls (happy)
+    const playBtn = document.getElementById("playBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const vol = document.getElementById("vol");
+
+    // karaoke
+    const song = document.getElementById("song");
+    const songStatus = document.getElementById("songStatus");
+    const line1 = document.getElementById("line1");
+    const line2 = document.getElementById("line2");
+    const line3 = document.getElementById("line3");
+    const line4 = document.getElementById("line4");
+
+    // final screen
+    const finalBack = document.getElementById("finalBack");
+    const replayAll = document.getElementById("replayAll");
+    const finalMsg = document.getElementById("finalMsg");
+    const finalSub = document.getElementById("finalSub");
+    const finalSong = document.getElementById("finalSong");
+    const finalStatus = document.getElementById("finalStatus");
+
+    const fPlay = document.getElementById("fPlay");
+    const fPause = document.getElementById("fPause");
+    const fStop = document.getElementById("fStop");
+    const fVol = document.getElementById("fVol");
+
+    /************ helpers ************/
+    const roMonths = ["Ianuarie","Februarie","Martie","Aprilie","Mai","Iunie","Iulie","August","Septembrie","Octombrie","Noiembrie","Decembrie"];
+    const pad = (n)=> String(n).padStart(2,"0");
+    const mmdd = (d)=> `${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const fmtRo = (d)=> `${d.getDate()} ${roMonths[d.getMonth()]} ${d.getFullYear()}`;
+
+    function setStatus(el, type, text){
+      el.className = "status show " + (type || "");
+      el.textContent = text;
+    }
+
+    /************ calendar ************/
+    const today = new Date();
+    let viewYear = today.getFullYear();
+    let viewMonth = 3; // Aprilie
+    let selected = null;
+
+    function openModalNow(){ modal.classList.add("show"); renderCalendar(); }
+    function closeModalNow(){ modal.classList.remove("show"); }
+
+    openCalendar.addEventListener("click", openModalNow);
+    closeModal.addEventListener("click", closeModalNow);
+    modal.addEventListener("click", (e)=>{ if(e.target === modal) closeModalNow(); });
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape" && modal.classList.contains("show")) closeModalNow();
+    });
+
+    prevMonthBtn.addEventListener("click", ()=>{
+      viewMonth--;
+      if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+      renderCalendar();
+    });
+    nextMonthBtn.addEventListener("click", ()=>{
+      viewMonth++;
+      if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+      renderCalendar();
+    });
+
+    clearPickBtn.addEventListener("click", ()=>{
+      selected = null;
+      confirmPickBtn.disabled = true;
+      pickedText.textContent = "Selectează o zi";
+      renderCalendar();
+    });
+
+    confirmPickBtn.addEventListener("click", ()=>{
+      if(!selected) return;
+      closeModalNow();
+      applySelected(selected);
+    });
+
+    function renderCalendar(){
+      monthNameEl.textContent = `${roMonths[viewMonth]} ${viewYear}`;
+      daysEl.innerHTML = "";
+
+      const first = new Date(viewYear, viewMonth, 1);
+      const last = new Date(viewYear, viewMonth+1, 0);
+      const startDow = (first.getDay() + 6) % 7;
+      const daysInMonth = last.getDate();
+
+      for(let i=0;i<startDow;i++){
+        const b = document.createElement("div");
+        b.className = "day muted";
+        b.textContent = "";
+        daysEl.appendChild(b);
+      }
+
+      for(let d=1; d<=daysInMonth; d++){
+        const cellDate = new Date(viewYear, viewMonth, d);
+        const btn = document.createElement("div");
+        btn.className = "day";
+        btn.textContent = d;
+
+        const isToday = (cellDate.getFullYear()===today.getFullYear() &&
+                         cellDate.getMonth()===today.getMonth() &&
+                         cellDate.getDate()===today.getDate());
+        if(isToday) btn.classList.add("today");
+
+        if(selected &&
+           cellDate.getFullYear()===selected.getFullYear() &&
+           cellDate.getMonth()===selected.getMonth() &&
+           cellDate.getDate()===selected.getDate()){
+          btn.classList.add("selected");
+        }
+
+        btn.addEventListener("click", ()=>{
+          selected = cellDate;
+          pickedText.textContent = fmtRo(selected);
+          confirmPickBtn.disabled = false;
+          renderCalendar();
+        });
+
+        daysEl.appendChild(btn);
+      }
+
+      if(selected){
+        pickedText.textContent = fmtRo(selected);
+        confirmPickBtn.disabled = false;
+      } else {
+        pickedText.textContent = "Selectează o zi";
+        confirmPickBtn.disabled = true;
+      }
+    }
+
+    function applySelected(d){
+      dateValue.textContent = fmtRo(d);
+
+      if(mmdd(d) === TARGET_MM_DD){
+        setStatus(status, "good", "La mulți ani.");
+        nextBtn.disabled = false;
+        fireConfetti(220);
+
+        setTimeout(()=> setStatus(status, "good", "Ohh… yah, it`s a beautiful day 😅"), 900);
+      } else {
+        setStatus(status, "bad", "Mai încearcă.");
+        nextBtn.disabled = true;
+      }
+    }
+
+    nextBtn.addEventListener("click", ()=>{
+      initQuestions();
+      show("questions");
+    });
+
+    /************ questions ************/
+    let qi = 0;
+
+    function initQuestions(){ qi = 0; renderQ(); }
+
+    function renderQ(){
+      const q = QUESTIONS[qi];
+      qTitle.textContent = q.title;
+      qLead.textContent  = q.lead || "";
+      qText.textContent  = q.text;
+      qSub.textContent   = q.sub || "";
+      qCount.textContent = `${qi+1} / ${QUESTIONS.length}`;
+      bar.style.width = Math.round((qi / QUESTIONS.length) * 100) + "%";
+
+      wink.className = "wink";
+      wink.textContent = "";
+
+      qNext.disabled = true;
+      qStatus.className = "status";
+      qStatus.textContent = "";
+
+      placeNoInitial();
+    }
+
+    function placeNoInitial(){
+      const rect = arena.getBoundingClientRect();
+      const bw = noBtn.offsetWidth || 90;
+      const bh = noBtn.offsetHeight || 44;
+      const pad = 14;
+
+      const x = Math.max(pad, Math.min(rect.width - bw - pad, rect.width * 0.70));
+      const y = Math.max(120, Math.min(rect.height - bh - pad, rect.height * 0.62));
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = y + "px";
+    }
+
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+    function moveNoAway(px, py){
+      const rect = arena.getBoundingClientRect();
+      const pad = 14;
+      const bw = noBtn.offsetWidth || 90;
+      const bh = noBtn.offsetHeight || 44;
+
+      const minX = pad;
+      const maxX = rect.width - bw - pad;
+      const minY = 120;
+      const maxY = rect.height - bh - pad;
+
+      for(let tries=0; tries<12; tries++){
+        const nx = minX + Math.random() * (maxX - minX);
+        const ny = minY + Math.random() * (maxY - minY);
+
+        const cx = rect.left + nx + bw/2;
+        const cy = rect.top  + ny + bh/2;
+
+        if(Math.hypot(cx - px, cy - py) > 150){
+          noBtn.style.left = clamp(nx, minX, maxX) + "px";
+          noBtn.style.top  = clamp(ny, minY, maxY) + "px";
+          return;
+        }
+      }
+      noBtn.style.left = (minX + Math.random()*(maxX - minX)) + "px";
+      noBtn.style.top  = (minY + Math.random()*(maxY - minY)) + "px";
+    }
+
+    function maybeEvade(e){
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const b = noBtn.getBoundingClientRect();
+      const d = Math.hypot((b.left + b.width/2) - x, (b.top + b.height/2) - y);
+
+      if(d < 95) moveNoAway(x, y);
+    }
+
+    noBtn.addEventListener("mousemove", maybeEvade);
+    noBtn.addEventListener("mouseenter", (e)=> maybeEvade(e));
+    noBtn.addEventListener("touchstart", (e)=> maybeEvade(e), {passive:true});
+    noBtn.addEventListener("click", (e)=> maybeEvade(e));
+
+    yesBtn.addEventListener("click", ()=>{
+      setStatus(qStatus, "good", YES_MESSAGES[Math.min(qi, YES_MESSAGES.length-1)]);
+      qNext.disabled = false;
+
+      if(qi === 1){
+        wink.textContent = WINK_AFTER_YES_ON_Q2;
+        wink.classList.add("show");
+      }
+    });
+
+    qNext.addEventListener("click", ()=>{
+      if(qi < QUESTIONS.length - 1){
+        qi++;
+        bar.style.width = Math.round((qi / QUESTIONS.length) * 100) + "%";
+        renderQ();
+      } else {
+        bar.style.width = "100%";
+        show("letter");
+        startTyping();
+        fireConfetti(130);
+      }
+    });
+
+    qBack.addEventListener("click", ()=> show("date"));
+
+    /************ letter typing ************/
+    let typingTimer = null;
+    let typingIndex = 0;
+
+    function stopTyping(){
+      if(typingTimer){ clearInterval(typingTimer); typingTimer = null; }
+    }
+
+    function startTyping(){
+      stopTyping();
+      typingIndex = 0;
+      paperContent.textContent = "";
+      const caret = document.createElement("span");
+      caret.className = "caret";
+      paperContent.appendChild(caret);
+
+      typingTimer = setInterval(()=>{
+        const text = LETTER_TEXT;
+        if(typingIndex >= text.length){
+          stopTyping();
+          caret.remove();
+          paperContent.textContent = text;
+          paperContent.insertAdjacentHTML("beforeend",
+            `\n\n\n—\n\n<span class="sig"><span class="sigName">${escapeHtml(SIGNATURE_NAME)}</span></span>`
+          );
+          return;
+        }
+        caret.insertAdjacentText("beforebegin", text[typingIndex]);
+        typingIndex++;
+        paperContent.scrollTop = paperContent.scrollHeight;
+      }, TYPING_MS);
+    }
+
+    function instantTyping(){
+      stopTyping();
+      paperContent.textContent = LETTER_TEXT;
+      paperContent.insertAdjacentHTML("beforeend",
+        `\n\n\n—\n\n<span class="sig"><span class="sigName">${escapeHtml(SIGNATURE_NAME)}</span></span>`
+      );
+      paperContent.scrollTop = 0;
+    }
+
+    typingReplay.addEventListener("click", startTyping);
+    typingInstant.addEventListener("click", instantTyping);
+
+    letterBack.addEventListener("click", ()=>{
+      stopTyping();
+      show("questions");
+    });
+
+    /************ flowers setup ************/
+    dedication.textContent = DEDICATION_TEXT;
+
+    function buildGallery(){
+      gallery.innerHTML = "";
+      FLOWER_IMAGES.forEach((src, i)=>{
+        const d = document.createElement("div");
+        d.className = "ph";
+        if(i === 0) d.classList.add("big");
+        else if(i % 7 === 0) d.classList.add("wide");
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "flori";
+        d.appendChild(img);
+
+        d.addEventListener("click", (e)=>{
+          setSlideFromGallery(i);
+          sparkleBurst(e.clientX, e.clientY);
+          fireConfetti(22);
+        });
+
+        gallery.appendChild(d);
+      });
+    }
+
+    function setSlideFromGallery(i){
+      slideImgs[0].src = FLOWER_IMAGES[i] || slideImgs[0].src;
+      setSlide(0);
+    }
+
+    /************ slideshow ************/
+    let slideIndex = 0;
+    let slideTimer = null;
+
+    function initSlideshow(){
+      for(let k=0;k<4;k++){
+        slideImgs[k].src = FLOWER_IMAGES[k] || FLOWER_IMAGES[0] || "";
+      }
+      setSlide(0);
+    }
+
+    function setSlide(i){
+      slideIndex = (i + slides.length) % slides.length;
+      slides.forEach((s, idx)=> s.classList.toggle("active", idx === slideIndex));
+    }
+
+    function startSlideshow(){
+      if(slideTimer) return;
+      slideTimer = setInterval(()=> setSlide(slideIndex + 1), 5200);
+    }
+    function stopSlideshow(){
+      if(slideTimer){ clearInterval(slideTimer); slideTimer = null; }
+    }
+
+    /************ karaoke + song (Happy Birthday) ************/
+    const KAR = [
+      ["Happy","birth-day","to","you"],
+      ["Happy","birth-day","to","you"],
+      ["Happy","birth-day","dear","Mi-ra-be-la"],
+      ["Happy","birth-day","to","you"]
+    ];
+    function renderLine(el, words){
+      el.innerHTML = "";
+      words.forEach((w)=>{
+        const span = document.createElement("span");
+        span.className = "word";
+        span.textContent = w;
+        el.appendChild(span);
+      });
+    }
+    renderLine(line1, KAR[0]);
+    renderLine(line2, KAR[1]);
+    renderLine(line3, KAR[2]);
+    renderLine(line4, KAR[3]);
+
+    const allWords = [
+      ...line1.querySelectorAll(".word"),
+      ...line2.querySelectorAll(".word"),
+      ...line3.querySelectorAll(".word"),
+      ...line4.querySelectorAll(".word"),
+    ];
+    const TIMINGS = [
+      0, 650, 1300, 1850,
+      3300, 3950, 4600, 5150,
+      6600, 7250, 7900, 8550, 9200, 10050,
+      12000, 12650, 13300, 13850
+    ];
+    let karaokeTimer = null;
+    function clearActive(){ allWords.forEach(w=> w.classList.remove("active")); }
+
+    function startKaraoke(){
+      clearActive();
+      setStatus(songStatus, "good", "La mulți ani. 🤍");
+
+      const t0 = performance.now();
+      let i = 0;
+
+      karaokeTimer = setInterval(()=>{
+        const now = performance.now() - t0;
+        if(i < TIMINGS.length && now >= TIMINGS[i]){
+          clearActive();
+          if(allWords[i]) allWords[i].classList.add("active");
+          i++;
+          if(i % 4 === 0) fireConfetti(18);
+        }
+        if(i >= TIMINGS.length){
+          clearInterval(karaokeTimer);
+          karaokeTimer = null;
+          setTimeout(()=> clearActive(), 900);
+        }
+      }, 40);
+    }
+
+    function stopKaraokeOnly(){
+      if(karaokeTimer){ clearInterval(karaokeTimer); karaokeTimer = null; }
+      clearActive();
+      songStatus.className = "status";
+      songStatus.textContent = "";
+    }
+
+    function setButtons(state){
+      if(state === "stopped"){
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+      } else if(state === "playing"){
+        playBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+      } else {
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = false;
+      }
+    }
+
+    vol.addEventListener("input", ()=>{ song.volume = Number(vol.value); });
+    song.volume = Number(vol.value);
+
+    async function playSong(){
+      try{
+        if(song.currentTime === 0) startKaraoke();
+        await song.play();
+        setButtons("playing");
+      }catch{
+        setStatus(songStatus, "bad", "Nu pot porni sunetul. Verifică assets/happy.mp3");
+        setButtons("stopped");
+      }
+    }
+    function pauseSong(){ song.pause(); setButtons("paused"); }
+    function stopSong(){
+      song.pause();
+      song.currentTime = 0;
+      stopKaraokeOnly();
+      setButtons("stopped");
+    }
+
+    playBtn.addEventListener("click", playSong);
+    pauseBtn.addEventListener("click", pauseSong);
+    stopBtn.addEventListener("click", stopSong);
+    song.addEventListener("ended", ()=> stopSong());
+
+    /************ FINAL song controls ************/
+    function setFButtons(state){
+      if(state === "stopped"){
+        fPlay.disabled = false;
+        fPause.disabled = true;
+        fStop.disabled = true;
+      } else if(state === "playing"){
+        fPlay.disabled = true;
+        fPause.disabled = false;
+        fStop.disabled = false;
+      } else {
+        fPlay.disabled = false;
+        fPause.disabled = true;
+        fStop.disabled = false;
+      }
+    }
+
+    fVol.addEventListener("input", ()=>{ finalSong.volume = Number(fVol.value); });
+    finalSong.volume = Number(fVol.value);
+
+    async function fPlaySong(){
+      try{
+        await finalSong.play();
+        setFButtons("playing");
+        setStatus(finalStatus, "good", "🤍");
+      }catch{
+        setStatus(finalStatus, "bad", "Nu pot porni sunetul. Verifică assets/la_multi_ani_instrumental.mp3");
+        setFButtons("stopped");
+      }
+    }
+    function fPauseSong(){ finalSong.pause(); setFButtons("paused"); }
+    function fStopSong(){
+      finalSong.pause();
+      finalSong.currentTime = 0;
+      setFButtons("stopped");
+      finalStatus.className = "status";
+      finalStatus.textContent = "";
+    }
+
+    fPlay.addEventListener("click", fPlaySong);
+    fPause.addEventListener("click", fPauseSong);
+    fStop.addEventListener("click", fStopSong);
+    finalSong.addEventListener("ended", ()=> fStopSong());
+
+    /************ navigation ************/
+    toFlowers.addEventListener("click", ()=>{
+      stopTyping();
+      buildGallery();
+      initSlideshow();
+      startSlideshow();
+      show("flowers");
+      fireConfetti(95);
+    });
+
+    flowersBack.addEventListener("click", ()=>{
+      stopSlideshow();
+      stopSong();
+      show("letter");
+    });
+
+    // to final page
+    toFinal.addEventListener("click", ()=>{
+      stopSlideshow();
+      stopSong();
+      // set message
+      finalMsg.textContent = FINAL_MESSAGE;
+      finalSub.textContent = FINAL_SUB;
+      setFButtons("stopped");
+      fStopSong();
+      show("final");
+      fireConfetti(110);
+    });
+
+    finalBack.addEventListener("click", ()=>{
+      fStopSong();
+      show("flowers");
+      startSlideshow();
+    });
+
+    replayAll.addEventListener("click", ()=>{
+      // full reset
+      fStopSong();
+      stopSong();
+      stopSlideshow();
+      stopTyping();
+
+      // reset date status
+      status.className = "status";
+      status.textContent = "";
+      dateValue.textContent = "Alege data…";
+      nextBtn.disabled = true;
+
+      // reset questions
+      qStatus.className = "status";
+      qStatus.textContent = "";
+      wink.className = "wink";
+      wink.textContent = "";
+      bar.style.width = "0%";
+
+      // go home
+      show("date");
+      fireConfetti(70);
+    });
+
+    /************ confetti ************/
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    let pieces = [];
+
+    function resize(){
+      const dpr = devicePixelRatio || 1;
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      resizeSparkles();
+    }
+    addEventListener("resize", resize);
+
+    function rand(a,b){ return Math.random()*(b-a)+a; }
+
+    function fireConfetti(amount=160){
+      for(let i=0;i<amount;i++){
+        pieces.push({
+          x: rand(0, innerWidth),
+          y: rand(-30, -10),
+          vx: rand(-2.2, 2.2),
+          vy: rand(3.0, 6.8),
+          r: rand(0, Math.PI),
+          vr: rand(-0.22, 0.22),
+          w: rand(6, 10),
+          h: rand(8, 14),
+          life: rand(75, 125),
+          color: `hsl(${Math.floor(rand(190, 320))} 98% 70%)`
+        });
+      }
+    }
+
+    function tick(){
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+      for(let i=pieces.length-1;i>=0;i--){
+        const p = pieces[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.02;
+        p.vx *= 0.996;
+        p.r += p.vr;
+        p.life--;
+
+        ctx.save();
+        ctx.translate(p.x,p.y);
+        ctx.rotate(p.r);
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life/95));
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+
+        if(p.y > innerHeight + 50 || p.life <= 0) pieces.splice(i,1);
+      }
+      tickSparkles();
+      requestAnimationFrame(tick);
+    }
+
+    /************ sparkles ************/
+    const sCanvas = document.getElementById("sparkles");
+    const sCtx = sCanvas.getContext("2d");
+    let sparks = [];
+
+    function resizeSparkles(){
+      const dpr = devicePixelRatio || 1;
+      sCanvas.width = innerWidth * dpr;
+      sCanvas.height = innerHeight * dpr;
+      sCanvas.style.width = innerWidth + "px";
+      sCanvas.style.height = innerHeight + "px";
+      sCtx.setTransform(dpr,0,0,dpr,0,0);
+    }
+
+    function sparkleBurst(x,y){
+      const n = 26;
+      for(let i=0;i<n;i++){
+        const a = Math.random()*Math.PI*2;
+        const sp = rand(1.8, 5.2);
+        sparks.push({
+          x, y,
+          vx: Math.cos(a)*sp,
+          vy: Math.sin(a)*sp,
+          r: rand(1.2, 2.6),
+          life: rand(26, 46),
+          hue: rand(190, 320)
+        });
+      }
+    }
+
+    function tickSparkles(){
+      sCtx.clearRect(0,0,innerWidth,innerHeight);
+      for(let i=sparks.length-1;i>=0;i--){
+        const p = sparks[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.04;
+        p.vx *= 0.98;
+        p.life--;
+
+        sCtx.save();
+        sCtx.globalAlpha = Math.max(0, Math.min(1, p.life/40));
+        sCtx.fillStyle = `hsla(${p.hue} 100% 75% / 1)`;
+        sCtx.beginPath();
+        sCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        sCtx.fill();
+        sCtx.restore();
+
+        if(p.life <= 0) sparks.splice(i,1);
+      }
+    }
+
+    /************ misc ************/
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // init
+    dedication.textContent = DEDICATION_TEXT;
+    finalMsg.textContent = FINAL_MESSAGE;
+    finalSub.textContent = FINAL_SUB;
+
+    resize();
+    tick();
+
+    setButtons("stopped");
+    setFButtons("stopped");
+  </script>
+</body>
+</html>
